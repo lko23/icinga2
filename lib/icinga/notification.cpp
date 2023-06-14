@@ -440,6 +440,20 @@ void Notification::BeginExecuteNotification(NotificationType type, const CheckRe
 			}
 		}
 
+		if (type == NotificationProblem && !reminder && !checkable->GetVolatile()) {
+			auto [host, service] = GetHostService(checkable);
+			uint_fast8_t state = service ? service->GetState() : host->GetState();
+
+			if (state == (uint_fast8_t)GetLastNotifiedStateByUser()->Get(userName)) {
+				Log(LogNotice, "Notification")
+					<< "Notification object '" << notificationName << "': We already notified user '" << userName << "' for a "
+					<< (service ? NotificationServiceStateToString(service->GetState()) : NotificationHostStateToString(host->GetState()))
+					<< " problem. Likely the last problem-to-problem state change was filtered out. Not sending duplicate notification.";
+
+				continue;
+			}
+		}
+
 		Log(LogInformation, "Notification")
 			<< "Sending " << (reminder ? "reminder " : "") << "'" << NotificationTypeToString(type) << "' notification '"
 			<< notificationName << "' for user '" << userName << "'";
