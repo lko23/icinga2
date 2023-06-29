@@ -24,6 +24,7 @@ std::map<String, int> Notification::m_TypeFilterMap;
 
 boost::signals2::signal<void (const Notification::Ptr&, const MessageOrigin::Ptr&)> Notification::OnNextNotificationChanged;
 boost::signals2::signal<void (const Notification::Ptr&, const String&, uint_fast8_t, const MessageOrigin::Ptr&)> Notification::OnLastNotifiedStateOfUserUpdated;
+boost::signals2::signal<void (const Notification::Ptr&, const MessageOrigin::Ptr&)> Notification::OnLastNotifiedStatesCleared;
 
 String NotificationNameComposer::MakeName(const String& shortName, const Object::Ptr& context) const
 {
@@ -231,6 +232,13 @@ void Notification::BeginExecuteNotification(NotificationType type, const CheckRe
 		<< "Attempting to send " << (reminder ? "reminder " : "")
 		<< "notifications of type '" << notificationTypeName
 		<< "' for notification object '" << notificationName << "'.";
+
+	if (type == NotificationRecovery) {
+		auto states (GetLastNotifiedStateByUser());
+
+		states->Clear();
+		OnLastNotifiedStatesCleared(this, nullptr);
+	}
 
 	Checkable::Ptr checkable = GetCheckable();
 
@@ -467,19 +475,14 @@ void Notification::BeginExecuteNotification(NotificationType type, const CheckRe
 		/* collect all notified users */
 		allNotifiedUsers.insert(user);
 
-		switch (type) {
-			case NotificationProblem:
-			case NotificationRecovery: {
-				auto [host, service] = GetHostService(checkable);
-				uint_fast8_t state = service ? service->GetState() : host->GetState();
+		if (type == NotificationProblem) {
+			auto [host, service] = GetHostService(checkable);
+			uint_fast8_t state = service ? service->GetState() : host->GetState();
 
-				if (state != GetLastNotifiedStateByUser()->Get(userName)) {
-					GetLastNotifiedStateByUser()->Set(userName, state);
-					OnLastNotifiedStateOfUserUpdated(this, userName, state, nullptr);
-				}
+			if (state != GetLastNotifiedStateByUser()->Get(userName)) {
+				GetLastNotifiedStateByUser()->Set(userName, state);
+				OnLastNotifiedStateOfUserUpdated(this, userName, state, nullptr);
 			}
-			default:
-				;
 		}
 
 		/* store all notified users for later recovery checks */
