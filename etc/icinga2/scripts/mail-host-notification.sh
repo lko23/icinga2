@@ -162,16 +162,16 @@ fi
 if [ -n "$MAILFROM" ] ; then
 
   ## Modify this for your own needs!
-
+  ## use printf "%s" instead of printf "%b", otherwise Windows paths in $HOSTOUTPUT can get interpreted as \n \t \a etc.
   ## Debian/Ubuntu use mailutils which requires `-a` to append the header
   if [ -f /etc/debian_version ]; then
-    /usr/bin/printf "%b" "$NOTIFICATION_MESSAGE" | $MAILBIN -a "From: $MAILFROM" -s "$SUBJECT" $USEREMAIL
+    /usr/bin/printf "%s" "$NOTIFICATION_MESSAGE" | $MAILBIN -a "From: $MAILFROM" -s "$SUBJECT" $USEREMAIL
   ## Other distributions (RHEL/SUSE/etc.) prefer mailx which sets a sender address with `-r`
   else
-    /usr/bin/printf "%b" "$NOTIFICATION_MESSAGE" | $MAILBIN -r "$MAILFROM" -s "$SUBJECT" $USEREMAIL
+    /usr/bin/printf "%s" "$NOTIFICATION_MESSAGE" | $MAILBIN -r "$MAILFROM" -s "$SUBJECT" $USEREMAIL
   fi
 
 else
-  /usr/bin/printf "%b" "$NOTIFICATION_MESSAGE" \
+  /usr/bin/printf "%s" "$NOTIFICATION_MESSAGE" \
   | $MAILBIN -s "$SUBJECT" $USEREMAIL
 fi
